@@ -90,7 +90,7 @@ export function RequestList({
         <p className="section-eyebrow mb-3">Service Operations</p>
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="flex items-start gap-4 min-w-0">
-            <div className="rounded-2xl bg-teal/10 p-3.5 ring-1 ring-teal/20">
+            <div className="rounded-lg border border-border bg-teal/10 p-3.5">
               <Inbox className="w-6 h-6 text-teal" />
             </div>
             <div>
@@ -118,13 +118,13 @@ export function RequestList({
                 key={metric.id}
                 onClick={() => setFilter(metric.id as any)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all border shrink-0",
+                  "flex items-center gap-3 px-4 py-3 rounded-lg border border-border transition-all shrink-0",
                   isActive 
                     ? "bg-white border-teal shadow-md shadow-teal/5 scale-[1.02]" 
                     : "bg-slate-50/50 border-slate-100 hover:bg-white hover:border-slate-200"
                 )}
               >
-                <div className={cn("rounded-xl p-2", metric.tone)}>
+                <div className={cn("rounded-lg border border-border p-2", metric.tone)}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="text-left">
@@ -142,17 +142,23 @@ export function RequestList({
           <Button
             size="lg"
             className={cn(
-              "bg-teal hover:bg-teal/90 gap-2.5 rounded-2xl shadow-lg shadow-teal/20 transition-all px-6",
-              activeHighlight === "new-request" && "ring-4 ring-teal/30 scale-105"
+              "bg-teal hover:bg-teal/90 gap-2.5 rounded-lg border border-teal/30 shadow-lg shadow-teal/20 transition-all px-6 relative",
+              activeHighlight === "new-request" &&
+                "ring-4 ring-teal/30 scale-105 shadow-[0_0_0_10px_rgba(20,143,119,0.16)] animate-pulse"
             )}
             onClick={() => setDialogOpen(true)}
           >
             <Sparkles className="w-4 h-4" />
-            New Request
+            Request as Customer
+            {activeHighlight === "new-request" && (
+              <span className="absolute -top-2 -right-2 rounded-lg border border-border bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal shadow-sm">
+                Customer POV
+              </span>
+            )}
           </Button>
 
           {activeHighlight === "new-request" && (
-            <div className="absolute right-0 top-[calc(100%+16px)] z-30 w-72 overflow-hidden rounded-2xl border border-teal/20 bg-white shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="absolute right-0 top-[calc(100%+16px)] z-30 w-72 overflow-hidden rounded-lg border border-border bg-white shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="bg-teal/5 px-4 py-3 border-b border-teal/10 flex items-start justify-between">
                 <p className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-teal">
                   <Sparkles className="h-3.5 w-3.5" />
@@ -161,14 +167,14 @@ export function RequestList({
                 <button
                   type="button"
                   onClick={onDismissHighlight}
-                  className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                  className="rounded-lg border border-border p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
               <div className="p-4">
                 <p className="text-[14px] text-slate-600 leading-relaxed font-medium">
-                  You can create your own <span className="text-teal font-bold">custom request</span> too by sending a message!
+                  Create a request from the <span className="text-teal font-bold">customer perspective</span> to see how AI handles live intake.
                 </p>
               </div>
             </div>
@@ -204,7 +210,7 @@ export function RequestList({
               <button
                 onClick={() => onSelectScenario(originalIndex)}
                 className={cn(
-                  "enterprise-surface w-full text-left p-6 hover:border-teal/40 transition-all cursor-pointer group rounded-2xl relative",
+                  "enterprise-surface w-full text-left p-6 hover:border-teal/40 transition-all cursor-pointer group rounded-lg relative",
                   isHighlighted && "ring-4 ring-teal/30 border-teal scale-[1.01] z-10 shadow-2xl shadow-teal/10"
                 )}
               >
@@ -277,7 +283,7 @@ export function RequestList({
               </button>
 
               {isHighlighted && (
-                <div className="absolute left-0 top-[calc(100%+16px)] z-30 w-80 overflow-hidden rounded-2xl border border-teal/20 bg-white shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-auto">
+                <div className="absolute left-0 top-[calc(100%+16px)] z-30 w-80 overflow-hidden rounded-lg border border-border bg-white shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-auto">
                   <div className="bg-teal/5 px-4 py-3 border-b border-teal/10 flex items-start justify-between">
                     <p className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-teal">
                       <Sparkles className="h-3.5 w-3.5" />
@@ -286,7 +292,7 @@ export function RequestList({
                     <button
                       type="button"
                       onClick={onDismissHighlight}
-                      className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                      className="rounded-lg border border-border p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -303,7 +309,7 @@ export function RequestList({
         })}
 
         {filteredScenarios.length === 0 && (
-          <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+          <div className="py-20 text-center border-2 border-dashed border-border rounded-lg">
             <Inbox className="w-10 h-10 text-slate-200 mx-auto mb-3" />
             <p className="text-slate-400 font-medium">No requests found for this filter</p>
           </div>

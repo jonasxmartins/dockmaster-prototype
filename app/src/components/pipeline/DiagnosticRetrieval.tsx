@@ -30,7 +30,7 @@ export function DiagnosticRetrieval({ data }: DiagnosticRetrievalProps) {
       </div>
 
       {data.patterns.map((pattern, i) => (
-        <div key={i} className="bg-muted rounded-md p-2.5 text-xs space-y-1.5">
+        <div key={i} className="rounded-lg border border-border bg-muted p-2.5 text-xs space-y-1.5">
           <div className="font-medium">{pattern.vesselType}</div>
           <div className="text-muted-foreground">
             Symptom: {pattern.symptom}

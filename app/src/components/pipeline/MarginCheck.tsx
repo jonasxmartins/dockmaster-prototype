@@ -45,7 +45,7 @@ export function MarginCheck({ data }: MarginCheckProps) {
 
       <div className="space-y-2">
         {data.recommendations.map((rec, i) => (
-          <div key={i} className="bg-muted rounded-md p-2.5">
+          <div key={i} className="rounded-lg border border-border bg-muted p-2.5">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-1.5">
                 {rec.type === "upsell" && (

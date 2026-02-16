@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import type { LineItem, WorkOrderData } from "@/lib/types";
+import type { LineItem, MarginRecommendation, WorkOrderData } from "@/lib/types";
 import { TAX_RATE } from "@/lib/constants";
 
 let nextId = 1000;
@@ -44,6 +44,25 @@ export function useWorkOrderEditor(baseWorkOrder: WorkOrderData) {
     setLineItems((prev) => [...prev, newItem]);
   }, []);
 
+  const addRecommendationItem = useCallback((recommendation: MarginRecommendation) => {
+    setLineItems((prev) => {
+      const description = `${recommendation.title} (margin recommendation)`;
+      const alreadyExists = prev.some((item) => item.description === description);
+      if (alreadyExists) return prev;
+
+      const newItem: LineItem = {
+        id: generateId(),
+        description,
+        category: recommendation.estimatedRevenue >= 0 ? "labor" : "discount",
+        quantity: 1,
+        unitPrice: recommendation.estimatedRevenue,
+        total: recommendation.estimatedRevenue,
+      };
+
+      return [...prev, newItem];
+    });
+  }, []);
+
   const resetItems = useCallback(() => {
     setLineItems(baseWorkOrder.lineItems);
   }, [baseWorkOrder.lineItems]);
@@ -72,6 +91,7 @@ export function useWorkOrderEditor(baseWorkOrder: WorkOrderData) {
     updateItem,
     removeItem,
     addItem,
+    addRecommendationItem,
     resetItems,
   };
 }

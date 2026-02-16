@@ -19,6 +19,7 @@ const categoryColors: Record<string, string> = {
   parts: "bg-teal/10 text-teal",
   materials: "bg-amber/10 text-amber",
   environmental: "bg-muted text-muted-foreground",
+  discount: "bg-emerald/10 text-emerald",
 };
 
 export function LineItemTable({ items }: LineItemTableProps) {

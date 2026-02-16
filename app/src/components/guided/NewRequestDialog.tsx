@@ -39,6 +39,19 @@ interface NewRequestDialogProps {
   onAdd: (scenario: Scenario) => void;
 }
 
+function isScenarioShape(value: unknown): value is Scenario {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<Scenario>;
+  return Boolean(
+    typeof candidate.id === "string" &&
+      typeof candidate.title === "string" &&
+      typeof candidate.customerRequest === "string" &&
+      candidate.stages?.entityExtraction &&
+      candidate.stages?.workOrder &&
+      candidate.stages?.marginCheck
+  );
+}
+
 export function NewRequestDialog({
   open,
   onOpenChange,
@@ -56,11 +69,14 @@ export function NewRequestDialog({
     setError(null);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 70000);
       const res = await fetch("/api/scope", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: text }),
-      });
+        signal: controller.signal,
+      }).finally(() => window.clearTimeout(timeoutId));
 
       if (!res.ok) {
         const body = await res.text();
@@ -68,13 +84,18 @@ export function NewRequestDialog({
         try {
           const parsed = JSON.parse(body);
           if (parsed.error) message = parsed.error;
+          if (parsed.details) message = `${message}: ${String(parsed.details).slice(0, 180)}`;
         } catch {
           if (body) message = body.slice(0, 200);
         }
         throw new Error(message);
       }
 
-      const scenario: Scenario = await res.json();
+      const payload: unknown = await res.json();
+      if (!isScenarioShape(payload)) {
+        throw new Error("The AI returned an incomplete scenario payload. Please try again.");
+      }
+      const scenario: Scenario = payload;
 
       // Ensure the scenario has a unique id
       if (!scenario.id || !scenario.id.startsWith("scenario-ai-")) {
@@ -85,7 +106,11 @@ export function NewRequestDialog({
       setPrompt("");
       onOpenChange(false);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      if (e instanceof DOMException && e.name === "AbortError") {
+        setError("Request timed out after 70s. Please try a shorter prompt.");
+      } else {
+        setError(e instanceof Error ? e.message : "Something went wrong");
+      }
     } finally {
       setLoading(false);
     }
@@ -116,7 +141,7 @@ export function NewRequestDialog({
                   onClick={() => handleSuggestionClick(s.prompt)}
                 >
                   <div className="flex items-center gap-2">
-                    <div className="p-1 bg-teal/10 rounded">
+                    <div className="p-1 bg-teal/10 rounded-lg border border-border">
                       <Icon className="w-3.5 h-3.5 text-teal" />
                     </div>
                     <span className="text-xs font-medium">{s.title}</span>
@@ -130,7 +155,7 @@ export function NewRequestDialog({
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Describe the customer's service request..."
-            className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-y"
+            className="w-full min-h-[120px] rounded-lg border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-y"
             disabled={loading}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -147,7 +172,7 @@ export function NewRequestDialog({
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-4 rounded-xl bg-teal/5 border border-teal/10 flex items-start gap-3"
+              className="p-4 rounded-lg border border-border bg-teal/5 flex items-start gap-3"
             >
               <Sparkles className="w-4 h-4 text-teal shrink-0 mt-0.5" />
               <div className="space-y-1">

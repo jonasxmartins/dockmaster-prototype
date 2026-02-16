@@ -105,6 +105,12 @@ export function useProactiveOutreach() {
     setAllItems((prev) => [item, ...prev]);
   }, []);
 
+  const updateOutreachMessage = useCallback((id: string, message: string) => {
+    setAllItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, message } : item))
+    );
+  }, []);
+
   const updateFilter = useCallback(
     <K extends keyof OutreachFilters>(key: K, value: OutreachFilters[K]) => {
       setFilters((prev) => ({ ...prev, [key]: value }));
@@ -120,6 +126,7 @@ export function useProactiveOutreach() {
     sendOutreach,
     dismissOutreach,
     addOutreach,
+    updateOutreachMessage,
     updateFilter,
   };
 }

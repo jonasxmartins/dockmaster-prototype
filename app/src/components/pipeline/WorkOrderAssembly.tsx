@@ -10,7 +10,10 @@ export function WorkOrderAssembly({ data }: WorkOrderAssemblyProps) {
   const laborItems = data.lineItems.filter((li) => li.category === "labor");
   const partsItems = data.lineItems.filter((li) => li.category === "parts");
   const otherItems = data.lineItems.filter(
-    (li) => li.category === "materials" || li.category === "environmental"
+    (li) =>
+      li.category === "materials" ||
+      li.category === "environmental" ||
+      li.category === "discount"
   );
 
   return (
@@ -26,7 +29,7 @@ export function WorkOrderAssembly({ data }: WorkOrderAssemblyProps) {
         </div>
       </div>
 
-      <div className="bg-muted rounded-md p-2.5 space-y-1">
+      <div className="rounded-lg border border-border bg-muted p-2.5 space-y-1">
         <div className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">
           Labor ({laborItems.length} items)
         </div>
@@ -40,7 +43,7 @@ export function WorkOrderAssembly({ data }: WorkOrderAssemblyProps) {
         ))}
       </div>
 
-      <div className="bg-muted rounded-md p-2.5 space-y-1">
+      <div className="rounded-lg border border-border bg-muted p-2.5 space-y-1">
         <div className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">
           Parts ({partsItems.length} items)
         </div>
@@ -55,7 +58,7 @@ export function WorkOrderAssembly({ data }: WorkOrderAssemblyProps) {
       </div>
 
       {otherItems.length > 0 && (
-        <div className="bg-muted rounded-md p-2.5 space-y-1">
+        <div className="rounded-lg border border-border bg-muted p-2.5 space-y-1">
           <div className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">
             Other ({otherItems.length} items)
           </div>

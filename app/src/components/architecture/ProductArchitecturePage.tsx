@@ -127,6 +127,8 @@ function getControlPoint(point: { x: number; y: number }, side: EdgeAnchorSide, 
 export function ProductArchitecturePage() {
   const viewportRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
+  const scaleRef = useRef(0.85);
+  const offsetRef = useRef<BoardOffset>({ x: 80, y: 80 });
   const dragRef = useRef({
     active: false,
     startX: 0,
@@ -134,6 +136,16 @@ export function ProductArchitecturePage() {
     originX: 0,
     originY: 0,
   });
+  const inertiaRef = useRef({
+    frameId: 0 as number | 0,
+    velocityX: 0,
+    velocityY: 0,
+    lastStepTime: 0,
+    lastPointerX: 0,
+    lastPointerY: 0,
+    lastPointerTime: 0,
+  });
+  const zoomAnimationRef = useRef(0 as number | 0);
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 1280, height: 680 });
   const [offset, setOffset] = useState<BoardOffset>({ x: 80, y: 80 });
   const [scale, setScale] = useState(0.85);
@@ -182,78 +194,216 @@ export function ProductArchitecturePage() {
     return () => window.removeEventListener("resize", measure);
   }, [scale]);
 
+  useEffect(() => {
+    scaleRef.current = scale;
+  }, [scale]);
+
+  useEffect(() => {
+    offsetRef.current = offset;
+  }, [offset]);
+
+  const stopInertia = () => {
+    if (inertiaRef.current.frameId) {
+      window.cancelAnimationFrame(inertiaRef.current.frameId);
+      inertiaRef.current.frameId = 0;
+    }
+  };
+
+  const stopZoomAnimation = () => {
+    if (zoomAnimationRef.current) {
+      window.cancelAnimationFrame(zoomAnimationRef.current);
+      zoomAnimationRef.current = 0;
+    }
+  };
+
+  const animateToView = (
+    targetScale: number,
+    targetOffset: BoardOffset,
+    options?: { durationMs?: number }
+  ) => {
+    stopZoomAnimation();
+    const durationMs = options?.durationMs ?? 260;
+    const startScale = scaleRef.current;
+    const startOffset = offsetRef.current;
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const rawT = clamp((now - startTime) / durationMs, 0, 1);
+      // Smoothstep easing for buttery feel.
+      const eased = rawT * rawT * (3 - 2 * rawT);
+      const nextScale = startScale + (targetScale - startScale) * eased;
+      const nextOffset = {
+        x: startOffset.x + (targetOffset.x - startOffset.x) * eased,
+        y: startOffset.y + (targetOffset.y - startOffset.y) * eased,
+      };
+      setScale(nextScale);
+      setOffset(nextOffset);
+
+      if (rawT < 1) {
+        zoomAnimationRef.current = window.requestAnimationFrame(tick);
+      } else {
+        zoomAnimationRef.current = 0;
+      }
+    };
+
+    zoomAnimationRef.current = window.requestAnimationFrame(tick);
+  };
+
+  const startInertia = () => {
+    stopInertia();
+    const speed = Math.hypot(inertiaRef.current.velocityX, inertiaRef.current.velocityY);
+    if (speed < 0.015) {
+      inertiaRef.current.velocityX = 0;
+      inertiaRef.current.velocityY = 0;
+      return;
+    }
+
+    inertiaRef.current.lastStepTime = 0;
+    const step = (timestamp: number) => {
+      const lastTs = inertiaRef.current.lastStepTime || timestamp;
+      const dt = Math.min(34, Math.max(8, timestamp - lastTs));
+      inertiaRef.current.lastStepTime = timestamp;
+
+      const friction = Math.pow(0.95, dt / 16.67);
+      inertiaRef.current.velocityX *= friction;
+      inertiaRef.current.velocityY *= friction;
+
+      const { minX, maxX, minY, maxY } = getBounds(viewportSize, scale);
+      setOffset((prev) => {
+        let nextX = prev.x + inertiaRef.current.velocityX * dt;
+        let nextY = prev.y + inertiaRef.current.velocityY * dt;
+
+        if (nextX < minX || nextX > maxX) {
+          nextX = clamp(nextX, minX, maxX);
+          inertiaRef.current.velocityX *= 0.35;
+        }
+        if (nextY < minY || nextY > maxY) {
+          nextY = clamp(nextY, minY, maxY);
+          inertiaRef.current.velocityY *= 0.35;
+        }
+
+        return { x: nextX, y: nextY };
+      });
+
+      const nextSpeed = Math.hypot(inertiaRef.current.velocityX, inertiaRef.current.velocityY);
+      if (nextSpeed < 0.006) {
+        inertiaRef.current.velocityX = 0;
+        inertiaRef.current.velocityY = 0;
+        inertiaRef.current.frameId = 0;
+        return;
+      }
+
+      inertiaRef.current.frameId = window.requestAnimationFrame(step);
+    };
+
+    inertiaRef.current.frameId = window.requestAnimationFrame(step);
+  };
+
+  useEffect(() => {
+    return () => {
+      stopInertia();
+      stopZoomAnimation();
+    };
+  }, []);
+
   const startDrag = (event: PointerEvent<HTMLDivElement>) => {
+    stopInertia();
+    stopZoomAnimation();
     dragRef.current = {
       active: true,
       startX: event.clientX,
       startY: event.clientY,
-      originX: offset.x,
-      originY: offset.y,
+      originX: offsetRef.current.x,
+      originY: offsetRef.current.y,
     };
+    inertiaRef.current.lastPointerX = event.clientX;
+    inertiaRef.current.lastPointerY = event.clientY;
+    inertiaRef.current.lastPointerTime = event.timeStamp;
+    inertiaRef.current.velocityX = 0;
+    inertiaRef.current.velocityY = 0;
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const onDrag = (event: PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current.active) return;
-    
-    // Use requestAnimationFrame for smoother updates if needed, 
-    // but framer-motion usually handles this. 
-    // Let's optimize by pre-calculating bounds on drag start.
+
     const dx = event.clientX - dragRef.current.startX;
     const dy = event.clientY - dragRef.current.startY;
-    
+    const { minX, maxX, minY, maxY } = getBounds(viewportSize, scale);
+
     setOffset({
-      x: dragRef.current.originX + dx,
-      y: dragRef.current.originY + dy,
+      x: clamp(dragRef.current.originX + dx, minX, maxX),
+      y: clamp(dragRef.current.originY + dy, minY, maxY),
     });
+
+    const dt = Math.max(1, event.timeStamp - inertiaRef.current.lastPointerTime);
+    const pointerDx = event.clientX - inertiaRef.current.lastPointerX;
+    const pointerDy = event.clientY - inertiaRef.current.lastPointerY;
+    const instantVx = pointerDx / dt;
+    const instantVy = pointerDy / dt;
+    inertiaRef.current.velocityX = inertiaRef.current.velocityX * 0.75 + instantVx * 0.25;
+    inertiaRef.current.velocityY = inertiaRef.current.velocityY * 0.75 + instantVy * 0.25;
+    inertiaRef.current.lastPointerX = event.clientX;
+    inertiaRef.current.lastPointerY = event.clientY;
+    inertiaRef.current.lastPointerTime = event.timeStamp;
   };
 
   const endDrag = (event: PointerEvent<HTMLDivElement>) => {
+    const wasDragging = dragRef.current.active;
     dragRef.current.active = false;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    
-    // Clamp to bounds only on end to allow "rubber banding" feel or just for efficiency
     const { minX, maxX, minY, maxY } = getBounds(viewportSize, scale);
-    setOffset(prev => ({
+    setOffset((prev) => ({
       x: clamp(prev.x, minX, maxX),
       y: clamp(prev.y, minY, maxY),
     }));
+    if (wasDragging) {
+      startInertia();
+    }
   };
 
   const zoomTo = (nextScale: number, center?: { x: number; y: number }) => {
+    stopInertia();
+    stopZoomAnimation();
     const clampedScale = clamp(nextScale, zoomMin, zoomMax);
     const viewportCenter = center ?? { x: viewportSize.width / 2, y: viewportSize.height / 2 };
 
-    const boardX = (viewportCenter.x - offset.x) / scale;
-    const boardY = (viewportCenter.y - offset.y) / scale;
+    const currentOffset = offsetRef.current;
+    const currentScale = scaleRef.current;
+    const boardX = (viewportCenter.x - currentOffset.x) / currentScale;
+    const boardY = (viewportCenter.y - currentOffset.y) / currentScale;
     const nextOffset = {
       x: viewportCenter.x - boardX * clampedScale,
       y: viewportCenter.y - boardY * clampedScale,
     };
     const { minX, maxX, minY, maxY } = getBounds(viewportSize, clampedScale);
-
-    setScale(clampedScale);
-    setOffset({
+    animateToView(
+      clampedScale,
+      {
       x: clamp(nextOffset.x, minX, maxX),
       y: clamp(nextOffset.y, minY, maxY),
-    });
+      },
+      { durationMs: 240 }
+    );
   };
 
   const fitBoard = () => {
+    stopInertia();
+    stopZoomAnimation();
     const fitScale = clamp(
       Math.min((viewportSize.width - 180) / BOARD_WIDTH, (viewportSize.height - 180) / BOARD_HEIGHT),
       zoomMin,
       1
     );
-    setScale(fitScale);
     const gateway = nodesById.gateway ?? architectureNodes[0];
-    setOffset(getCenteredOffset(gateway, viewportSize, fitScale));
+    animateToView(fitScale, getCenteredOffset(gateway, viewportSize, fitScale), { durationMs: 360 });
   };
 
   const onWheel = (event: WheelEvent<HTMLDivElement>) => {
     event.preventDefault();
+    stopInertia();
     const rect = viewportRef.current?.getBoundingClientRect();
     if (!rect) return;
     const pointer = {
@@ -265,12 +415,13 @@ export function ProductArchitecturePage() {
   };
 
   const openNode = (nodeId: string) => {
+    stopInertia();
+    stopZoomAnimation();
     const node = nodesById[nodeId];
     if (!node) return;
 
-    const focusScale = clamp(Math.max(scale, 1.12), zoomMin, zoomMax);
-    setScale(focusScale);
-    setOffset(getCenteredOffset(node, viewportSize, focusScale));
+    const focusScale = clamp(Math.max(scaleRef.current, 1.12), zoomMin, zoomMax);
+    animateToView(focusScale, getCenteredOffset(node, viewportSize, focusScale), { durationMs: 380 });
     setOpenNodeId(nodeId);
   };
 
@@ -304,7 +455,7 @@ export function ProductArchitecturePage() {
     <div className="h-[calc(100vh-5rem)] w-full overflow-hidden relative bg-slate-900">
       <div
         ref={viewportRef}
-        className="h-full w-full touch-none cursor-grab active:cursor-grabbing relative"
+        className="h-full w-full touch-none cursor-grab active:cursor-grabbing relative select-none"
         onPointerDown={startDrag}
         onPointerMove={onDrag}
         onPointerUp={endDrag}
@@ -317,7 +468,7 @@ export function ProductArchitecturePage() {
           backgroundSize: "40px 40px",
         }}
       >
-        <div className="absolute top-5 left-6 z-20 pointer-events-none">
+        <div className="absolute top-5 left-6 z-20 pointer-events-none select-none">
           <h2 className="text-white text-2xl font-semibold flex items-center gap-2">
             <Network className="w-6 h-6 text-teal-300" />
             Product Architecture
@@ -328,11 +479,11 @@ export function ProductArchitecturePage() {
           </p>
         </div>
 
-        <div className="absolute top-5 right-6 z-20 flex items-center gap-2">
+        <div className="absolute top-5 right-6 z-20 flex items-center gap-2 select-none">
           <button
             type="button"
             onClick={() => zoomTo(scale + 0.12)}
-            className="rounded-md border border-slate-500/70 bg-slate-800/85 px-3 py-2 text-slate-100 hover:bg-slate-700/90 transition-colors"
+            className="rounded-lg border border-slate-500/70 bg-slate-800/85 px-3 py-2 text-slate-100 hover:bg-slate-700/90 transition-colors"
             onPointerDown={(event) => event.stopPropagation()}
             aria-label="Zoom in"
           >
@@ -341,7 +492,7 @@ export function ProductArchitecturePage() {
           <button
             type="button"
             onClick={() => zoomTo(scale - 0.12)}
-            className="rounded-md border border-slate-500/70 bg-slate-800/85 px-3 py-2 text-slate-100 hover:bg-slate-700/90 transition-colors"
+            className="rounded-lg border border-slate-500/70 bg-slate-800/85 px-3 py-2 text-slate-100 hover:bg-slate-700/90 transition-colors"
             onPointerDown={(event) => event.stopPropagation()}
             aria-label="Zoom out"
           >
@@ -350,24 +501,28 @@ export function ProductArchitecturePage() {
           <button
             type="button"
             onClick={fitBoard}
-            className="rounded-md border border-slate-500/70 bg-slate-800/85 px-3 py-2 text-xs text-slate-100 hover:bg-slate-700/90 transition-colors"
+            className="rounded-lg border border-slate-500/70 bg-slate-800/85 px-3 py-2 text-xs text-slate-100 hover:bg-slate-700/90 transition-colors"
             onPointerDown={(event) => event.stopPropagation()}
           >
             Fit View
           </button>
         </div>
 
-        <motion.div
+        <div
           className="absolute"
-          style={{ width: BOARD_WIDTH, height: BOARD_HEIGHT, transformOrigin: "0 0" }}
-          animate={{ x: offset.x, y: offset.y, scale }}
-          transition={{ type: "spring", stiffness: 350, damping: 38, mass: 0.5 }}
+          style={{
+            width: BOARD_WIDTH,
+            height: BOARD_HEIGHT,
+            transformOrigin: "0 0",
+            transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${scale})`,
+            willChange: "transform",
+          }}
         >
           <div className="absolute inset-0 pointer-events-none">
             {architectureZones.map((zone) => (
               <div
                 key={zone.id}
-                className="absolute rounded-2xl border border-dashed border-slate-300/25 bg-slate-400/5"
+                className="absolute rounded-lg border border-dashed border-slate-400 bg-slate-400/5"
                 style={{
                   left: zone.x,
                   top: zone.y,
@@ -511,7 +666,7 @@ export function ProductArchitecturePage() {
                 type="button"
                 onClick={() => openNode(node.id)}
                 onPointerDown={(event) => event.stopPropagation()}
-                className={`absolute text-left rounded-xl border-2 p-5 shadow-lg hover:shadow-xl transition-all ${categoryStyles[node.category]} ${
+                className={`absolute text-left rounded-lg border-2 p-5 shadow-lg hover:shadow-xl transition-all ${categoryStyles[node.category]} ${
                   openNodeId === node.id ? "ring-2 ring-teal-300" : ""
                 }`}
                 style={{
@@ -528,7 +683,7 @@ export function ProductArchitecturePage() {
                     </div>
                     <div className="mt-2 text-xl font-semibold leading-snug">{node.title}</div>
                   </div>
-                  <div className="rounded-lg border border-white/20 bg-white/10 p-3 shrink-0">
+                  <div className="rounded-lg border border-slate-500/50 bg-white/10 p-3 shrink-0">
                     <Icon className="w-6 h-6" />
                   </div>
                 </div>
@@ -536,9 +691,9 @@ export function ProductArchitecturePage() {
               </button>
             );
           })}
-        </motion.div>
+        </div>
 
-        <div className="absolute bottom-4 left-6 text-base rounded-md border border-slate-500/70 bg-slate-800/85 px-4 py-2 text-slate-100 pointer-events-none flex items-center gap-2">
+        <div className="absolute bottom-4 left-6 text-base rounded-lg border border-slate-500/70 bg-slate-800/85 px-4 py-2 text-slate-100 pointer-events-none flex items-center gap-2">
           <Move className="w-5 h-5 text-teal-300" />
           Drag to pan, mouse wheel to zoom, click a node to focus.
         </div>
@@ -552,7 +707,7 @@ export function ProductArchitecturePage() {
                 animate={{ opacity: 1, x: 0, y: 0 }}
                 exit={{ opacity: 0, x: 40, y: -12 }}
                 transition={{ duration: 0.24, ease: "easeOut" }}
-                className="pointer-events-auto rounded-2xl border-4 border-teal-300 bg-slate-950/95 shadow-2xl backdrop-blur-md p-8 text-slate-100"
+                className="pointer-events-auto rounded-lg border-2 border-teal-300 bg-slate-950/95 shadow-2xl backdrop-blur-md p-8 text-slate-100"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>

@@ -70,7 +70,7 @@ If the request mentions a known customer or vessel (by name, vessel details, or 
       "lineItems": [{
         "id": string,
         "description": string,
-        "category": "labor" | "parts" | "materials" | "environmental",
+        "category": "labor" | "parts" | "materials" | "environmental" | "discount",
         "quantity": number,
         "unitPrice": number,
         "total": number,
@@ -123,7 +123,112 @@ function readPromptFromBody(body: unknown): string | null {
   return null;
 }
 
-export default async function handler(req: VercelLikeRequest, res: VercelLikeResponse): Promise<void> {
+type ScopeResult =
+  | { ok: true; scenario: unknown }
+  | { ok: false; status: number; error: string; details?: string };
+
+function getApiKey(): string | undefined {
+  return (globalThis as { process?: { env?: Record<string, string | undefined> } })
+    .process?.env?.OPENAI_API_KEY;
+}
+
+async function runScope(prompt: string): Promise<ScopeResult> {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    return { ok: false, status: 500, error: "OPENAI_API_KEY not configured" };
+  }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-5-mini",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" },
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    return {
+      ok: false,
+      status: 502,
+      error: `OpenAI API error: ${response.status}`,
+      details: text.slice(0, 1000),
+    };
+  }
+
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content !== "string" || !content.trim()) {
+    return { ok: false, status: 502, error: "No content in OpenAI response" };
+  }
+
+  try {
+    return { ok: true, scenario: JSON.parse(content) };
+  } catch {
+    return { ok: false, status: 502, error: "Model returned invalid JSON" };
+  }
+}
+
+function isWebRequest(value: unknown): value is Request {
+  return typeof Request !== "undefined" && value instanceof Request;
+}
+
+export default async function handler(
+  req: Request | VercelLikeRequest,
+  res?: VercelLikeResponse
+): Promise<Response | void> {
+  if (isWebRequest(req)) {
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+        status: 405,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    try {
+      const body = await req.json();
+      const prompt = readPromptFromBody(body);
+      if (!prompt) {
+        return new Response(JSON.stringify({ error: "Missing prompt" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const result = await runScope(prompt);
+      if (!result.ok) {
+        return new Response(
+          JSON.stringify({ error: result.error, ...(result.details ? { details: result.details } : {}) }),
+          {
+            status: result.status,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      return new Response(JSON.stringify(result.scenario), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown server error";
+      return new Response(JSON.stringify({ error: "Unhandled server error", details: message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  if (!res) return;
+
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
@@ -136,47 +241,16 @@ export default async function handler(req: VercelLikeRequest, res: VercelLikeRes
       return;
     }
 
-    const apiKey = (globalThis as { process?: { env?: Record<string, string | undefined> } })
-      .process?.env?.OPENAI_API_KEY;
-    if (!apiKey) {
-      res.status(500).json({ error: "OPENAI_API_KEY not configured" });
-      return;
-    }
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-5-mini",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: prompt },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      res.status(502).json({
-        error: `OpenAI API error: ${response.status}`,
-        details: text.slice(0, 1000),
+    const result = await runScope(prompt);
+    if (!result.ok) {
+      res.status(result.status).json({
+        error: result.error,
+        ...(result.details ? { details: result.details } : {}),
       });
       return;
     }
 
-    const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) {
-      res.status(502).json({ error: "No content in OpenAI response" });
-      return;
-    }
-
-    res.setHeader("Content-Type", "application/json");
-    res.status(200).end(content);
+    res.status(200).json(result.scenario);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown server error";
     res.status(500).json({ error: "Unhandled server error", details: message });

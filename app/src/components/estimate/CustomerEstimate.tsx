@@ -90,7 +90,7 @@ export function CustomerEstimate({
         </div>
 
         {/* Scheduled Date */}
-        <div className="bg-muted/50 rounded-lg p-3 mb-6 text-sm">
+        <div className="rounded-lg border border-border bg-muted/50 p-3 mb-6 text-sm">
           <span className="text-muted-foreground">Scheduled Service Date: </span>
           <span className="font-medium">
             {formatDate(workOrder.scheduledDate)}

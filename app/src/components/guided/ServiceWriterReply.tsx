@@ -20,6 +20,14 @@ type ReplyPhase =
   | "customer-replied"
   | "done";
 
+function ensureJonasSignoff(message: string): string {
+  const trimmed = message.trim();
+  if (!trimmed) return "Thank you, Jonas.";
+  if (trimmed.toLowerCase().includes("thank you, jonas")) return trimmed;
+  const needsTerminalPunctuation = !/[.!?]$/.test(trimmed);
+  return `${trimmed}${needsTerminalPunctuation ? "." : ""} Thank you, Jonas.`;
+}
+
 export function ServiceWriterReply({
   suggestedReply,
   customerConfirmation,
@@ -30,8 +38,10 @@ export function ServiceWriterReply({
   const [sentText, setSentText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const suggestedReplyWithSignoff = ensureJonasSignoff(suggestedReply);
+
   const typewriter = useTypewriter({
-    text: suggestedReply,
+    text: suggestedReplyWithSignoff,
     speed: 15,
     onComplete: () => setPhase("editable"),
   });
@@ -50,10 +60,10 @@ export function ServiceWriterReply({
 
   useEffect(() => {
     if (phase === "editable") {
-      setEditableText(suggestedReply);
+      setEditableText(suggestedReplyWithSignoff);
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
-  }, [phase, suggestedReply]);
+  }, [phase, suggestedReplyWithSignoff]);
 
   const handleStartReply = () => {
     setPhase("typing");
@@ -157,7 +167,7 @@ export function ServiceWriterReply({
             className="space-y-3"
           >
             <div className="flex justify-end">
-              <div className="bg-teal/10 text-teal-foreground rounded-lg rounded-br-sm p-3 max-w-[80%] text-sm">
+              <div className="rounded-lg rounded-br-sm border border-border bg-teal/10 p-3 max-w-[80%] text-sm text-teal-foreground">
                 {sentText}
               </div>
             </div>
@@ -181,7 +191,7 @@ export function ServiceWriterReply({
                 animate={{ opacity: 1, y: 0 }}
                 className="flex justify-start"
               >
-                <div className="bg-muted rounded-lg rounded-bl-sm p-3 max-w-[80%] text-sm">
+                <div className="rounded-lg rounded-bl-sm border border-border bg-muted p-3 max-w-[80%] text-sm">
                   {customerConfirmation}
                 </div>
               </motion.div>

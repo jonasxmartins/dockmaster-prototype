@@ -45,7 +45,7 @@ export function IntakeStep({ scenario, onSubmit }: IntakeStepProps) {
               </div>
               <MessageSourceBadge source={scenario.messageSource} />
             </div>
-            <div className="bg-muted rounded-lg rounded-tl-sm p-4 text-sm leading-relaxed mb-4">
+            <div className="rounded-lg rounded-tl-sm border border-border bg-muted p-4 text-sm leading-relaxed mb-4">
               "{scenario.customerRequest}"
             </div>
 

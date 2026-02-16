@@ -32,6 +32,7 @@ export function ReviewStep({
     updateItem,
     removeItem,
     addItem,
+    addRecommendationItem,
   } = useWorkOrderEditor(scenario.stages.workOrder);
 
   const handleToggleEdit = () => {
@@ -97,7 +98,10 @@ export function ReviewStep({
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <MarginRecommendations data={scenario.stages.marginCheck} />
+          <MarginRecommendations
+            data={scenario.stages.marginCheck}
+            onAddToWorkOrder={addRecommendationItem}
+          />
         </motion.div>
       </div>
 

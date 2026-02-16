@@ -61,14 +61,14 @@ function App() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-2xl overflow-hidden border-0 p-0 shadow-2xl rounded-3xl text-slate-900">
+        <DialogContent className="sm:max-w-2xl overflow-hidden border border-border p-0 shadow-2xl rounded-lg text-slate-900">
           <div className="bg-navy p-8 text-white relative overflow-hidden">
             {/* Decorative element */}
             <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-teal/10 blur-3xl" />
             <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-teal/5 blur-3xl" />
             
             <div className="relative">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold tracking-widest uppercase text-teal-light">
+              <div className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold tracking-widest uppercase text-teal-light">
                 <Sparkles className="h-3.5 w-3.5" />
                 Product Concept
               </div>
@@ -78,7 +78,7 @@ function App() {
                 </DialogTitle>
               </DialogHeader>
               <p className="mt-4 text-[16px] text-white/70 leading-relaxed font-light">
-                This prototype demonstrates a <span className="text-white font-medium">Service Management AI Agent</span> designed to streamline boatyard operations and maximize service revenue.
+                This prototype demonstrates a <span className="text-white font-medium">Service Management AI Agent</span> designed to streamline boatyard operations and maximize service revenue. Thank you, Jonas.
               </p>
             </div>
           </div>
@@ -90,11 +90,11 @@ function App() {
               </p>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
+                <div className="rounded-lg border border-border bg-slate-50/50 p-4">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-teal mb-1">Service Analysis</p>
                   <p className="text-[13px]">Automated extraction of service needs from unstructured customer messages.</p>
                 </div>
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
+                <div className="rounded-lg border border-border bg-slate-50/50 p-4">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-teal mb-1">Value Expansion</p>
                   <p className="text-[13px]">AI-generated recommendations for preventative maintenance and upsells.</p>
                 </div>
@@ -107,7 +107,7 @@ function App() {
                 <span className="text-xs font-medium uppercase tracking-wider">Interactive Demo</span>
               </div>
               <Button 
-                className="bg-teal hover:bg-teal/90 text-white px-8 py-6 rounded-2xl text-base font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-teal/20" 
+                className="bg-teal hover:bg-teal/90 text-white px-8 py-6 rounded-lg border border-teal/30 text-base font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-teal/20" 
                 onClick={handleWelcomeClose}
               >
                 Begin Walkthrough

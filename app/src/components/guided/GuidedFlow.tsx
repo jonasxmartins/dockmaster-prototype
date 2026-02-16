@@ -61,7 +61,7 @@ export function GuidedFlow({ activeHighlight, onDismissHighlight }: GuidedFlowPr
             <div key={s.id} className="flex items-center">
               <div
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-transparent text-xs font-medium transition-all",
                   i === currentStepIndex
                     ? "bg-teal text-white shadow-sm"
                     : i < currentStepIndex
@@ -71,7 +71,7 @@ export function GuidedFlow({ activeHighlight, onDismissHighlight }: GuidedFlowPr
               >
                 <span
                   className={cn(
-                    "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                    "w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-bold",
                     i === currentStepIndex
                       ? "bg-white/20"
                       : i < currentStepIndex

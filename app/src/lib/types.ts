@@ -50,7 +50,7 @@ export interface Part {
 export interface LineItem {
   id: string;
   description: string;
-  category: "labor" | "parts" | "materials" | "environmental";
+  category: "labor" | "parts" | "materials" | "environmental" | "discount";
   quantity: number;
   unitPrice: number;
   total: number;

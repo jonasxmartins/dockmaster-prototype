@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
@@ -20,6 +20,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { getCustomer } from "@/data/customers";
 import { getVessel } from "@/data/vessels";
 import type { ProactiveOutreach, OutreachStatus, OutreachPriority } from "@/lib/types";
@@ -57,12 +58,19 @@ interface OpportunityCardProps {
   index: number;
   onSend?: (id: string) => void;
   onDismiss?: (id: string) => void;
+  onEdit?: (id: string, message: string) => void;
 }
 
-export function OpportunityCard({ item, index, onSend, onDismiss }: OpportunityCardProps) {
+export function OpportunityCard({ item, index, onSend, onDismiss, onEdit }: OpportunityCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [sendState, setSendState] = useState<SendState>("idle");
   const [isDismissing, setIsDismissing] = useState(false);
+  const [isEditingMessage, setIsEditingMessage] = useState(false);
+  const [editableMessage, setEditableMessage] = useState(item.message);
+
+  useEffect(() => {
+    if (!isEditingMessage) setEditableMessage(item.message);
+  }, [item.message, isEditingMessage]);
   const customer = getCustomer(item.customerId);
   const vessel = getVessel(item.vesselId);
   const status = statusConfig[item.status];
@@ -89,6 +97,29 @@ export function OpportunityCard({ item, index, onSend, onDismiss }: OpportunityC
   const handleDismiss = useCallback(() => {
     setIsDismissing(true);
   }, []);
+
+  const handleEditDraft = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setEditableMessage(item.message);
+      setIsEditingMessage(true);
+      setExpanded(true);
+    },
+    [item.message]
+  );
+
+  const handleSaveMessage = useCallback(() => {
+    const trimmed = editableMessage.trim();
+    if (trimmed && trimmed !== item.message) {
+      onEdit?.(item.id, trimmed);
+    }
+    setIsEditingMessage(false);
+  }, [editableMessage, item.id, item.message, onEdit]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditableMessage(item.message);
+    setIsEditingMessage(false);
+  }, [item.message]);
 
   return (
     <AnimatePresence
@@ -134,7 +165,7 @@ export function OpportunityCard({ item, index, onSend, onDismiss }: OpportunityC
 
               {/* AI reasoning line */}
               <div className="flex items-start gap-2 text-sm">
-                <div className="flex items-center gap-2 rounded-md bg-teal/5 px-2 py-1 border border-teal/10 w-full">
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-teal/5 px-2 py-1 w-full">
                   <Bot className="w-4 h-4 shrink-0 text-teal" />
                   <span className="text-slate-700">
                     <span className="font-bold text-teal">Detected:</span> {item.aiReasoning}
@@ -147,12 +178,12 @@ export function OpportunityCard({ item, index, onSend, onDismiss }: OpportunityC
                 <span>
                   {customer?.name} · {vessel?.name} · {vessel?.engineHours.toLocaleString()} hrs
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-md bg-teal/10 px-2 py-0.5 text-xs text-teal">
+                <span className="inline-flex items-center gap-1 rounded-lg border border-border bg-teal/10 px-2 py-0.5 text-xs text-teal">
                   <Sparkles className="h-3 w-3" />
                   {Math.round(item.aiConfidence * 100)}% confidence
                 </span>
                 {dueDateLabel && (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs">
+                  <span className="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-100 px-2 py-0.5 text-xs">
                     <CalendarClock className="h-3 w-3" />
                     Due {dueDateLabel}
                   </span>
@@ -213,7 +244,7 @@ export function OpportunityCard({ item, index, onSend, onDismiss }: OpportunityC
                         )}
                       </AnimatePresence>
                       {sendState === "idle" && (
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={handleEditDraft}>
                           <Pencil className="w-3.5 h-3.5" />
                           Edit Draft
                         </Button>
@@ -252,7 +283,7 @@ export function OpportunityCard({ item, index, onSend, onDismiss }: OpportunityC
                   >
                     {/* Detailed AI Analysis Section */}
                     {item.aiAnalysis && (
-                      <div className="space-y-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <div className="space-y-3 p-4 rounded-lg border border-border bg-slate-50">
                         <div className="flex items-center gap-2 mb-1">
                           <FileSearch className="w-4 h-4 text-teal" />
                           <h4 className="text-[13px] font-bold uppercase tracking-wider text-slate-700">
@@ -304,16 +335,48 @@ export function OpportunityCard({ item, index, onSend, onDismiss }: OpportunityC
                     )}
 
                     {/* Suggested Response Section */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 px-1">
-                        <Mail className="w-4 h-4 text-slate-400" />
-                        <h4 className="text-[13px] font-bold uppercase tracking-wider text-slate-700">
-                          Suggested Response
-                        </h4>
+                    <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-between gap-2 px-1">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-slate-400" />
+                          <h4 className="text-[13px] font-bold uppercase tracking-wider text-slate-700">
+                            Suggested Response
+                          </h4>
+                        </div>
+                        {isEditingMessage && (
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-xs h-7"
+                              onClick={handleCancelEdit}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-teal hover:bg-teal/90 text-white text-xs h-7"
+                              onClick={handleSaveMessage}
+                            >
+                              <Check className="w-3 h-3 mr-1" />
+                              Save
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      <div className="p-4 rounded-lg bg-white text-sm whitespace-pre-line leading-relaxed border border-slate-200 shadow-inner text-slate-600">
-                        {item.message}
-                      </div>
+                      {isEditingMessage ? (
+                        <Textarea
+                          value={editableMessage}
+                          onChange={(e) => setEditableMessage(e.target.value)}
+                          className="min-h-[120px] text-sm resize-y border-teal/30 focus-visible:ring-teal"
+                          placeholder="Edit the outreach message..."
+                          autoFocus
+                        />
+                      ) : (
+                        <div className="p-4 rounded-lg border border-border bg-white text-sm whitespace-pre-line leading-relaxed shadow-inner text-slate-600">
+                          {item.message}
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}

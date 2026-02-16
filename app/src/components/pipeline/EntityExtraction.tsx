@@ -13,14 +13,14 @@ export function EntityExtraction({ data }: EntityExtractionProps) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2 text-xs">
-        <div className="flex items-center gap-1.5 bg-muted rounded-md px-2 py-1.5">
+        <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2 py-1.5">
           <User className="w-3.5 h-3.5 text-navy" />
           <div>
             <div className="font-medium">{data.customer.name}</div>
             <div className="text-muted-foreground">{data.customer.tier}</div>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 bg-muted rounded-md px-2 py-1.5">
+        <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2 py-1.5">
           <Ship className="w-3.5 h-3.5 text-navy" />
           <div>
             <div className="font-medium">{data.vessel.name}</div>
@@ -29,7 +29,7 @@ export function EntityExtraction({ data }: EntityExtractionProps) {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 bg-muted rounded-md px-2 py-1.5">
+        <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2 py-1.5">
           <Wrench className="w-3.5 h-3.5 text-navy" />
           <div>
             <div className="font-medium">{data.serviceType}</div>

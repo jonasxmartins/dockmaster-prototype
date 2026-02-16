@@ -15,7 +15,7 @@ export const scenarios: Scenario[] = [
     vesselId: "vessel-001",
     messageSource: { channel: "whatsapp", identifier: "+1 (813) 555-0123" },
     suggestedReply:
-      "Hi Robert! Thanks for reaching out. Rough idle and power loss at 620 hours on the twins definitely warrants a full tune-up. I'll get you scheduled for a diagnostic and service — we'll check spark plugs, fuel filters, impellers, and gear lube on both engines. Does next Thursday work for drop-off?",
+      "Hi Robert! Thanks for reaching out. Rough idle and power loss at 620 hours on the twins definitely warrants a full tune-up. I'll get you scheduled for a diagnostic and service — we'll check spark plugs, fuel filters, impellers, and gear lube on both engines. Does next Thursday work for drop-off? Thank you, Jonas.",
     customerConfirmation:
       "Thursday works great. I'll have her at the dock by 8 AM. Thanks for getting me in so quick!",
     stages: {

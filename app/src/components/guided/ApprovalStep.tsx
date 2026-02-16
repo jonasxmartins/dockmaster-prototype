@@ -114,7 +114,7 @@ export function ApprovalStep({
             </div>
           </div>
 
-          <div className="bg-muted rounded-lg p-4 mb-4">
+          <div className="rounded-lg border border-border bg-muted p-4 mb-4">
             <div className="flex justify-between text-sm">
               <span>Work Order Total</span>
               <span className="font-semibold">

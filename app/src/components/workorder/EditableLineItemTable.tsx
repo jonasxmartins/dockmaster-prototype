@@ -23,6 +23,7 @@ const categories: LineItem["category"][] = [
   "parts",
   "materials",
   "environmental",
+  "discount",
 ];
 
 export function EditableLineItemTable({
@@ -54,7 +55,7 @@ export function EditableLineItemTable({
                   onChange={(e) =>
                     onUpdateItem(item.id, { description: e.target.value })
                   }
-                  className="w-full bg-transparent border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-teal"
+                  className="w-full rounded-lg border border-border bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-teal"
                 />
               </TableCell>
               <TableCell>
@@ -65,7 +66,7 @@ export function EditableLineItemTable({
                       category: e.target.value as LineItem["category"],
                     })
                   }
-                  className="w-full bg-transparent border border-border rounded px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-teal capitalize"
+                  className="w-full rounded-lg border border-border bg-transparent px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-teal capitalize"
                 >
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
@@ -84,7 +85,7 @@ export function EditableLineItemTable({
                       quantity: Math.max(1, parseInt(e.target.value) || 1),
                     })
                   }
-                  className="w-16 bg-transparent border border-border rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-teal"
+                  className="w-16 rounded-lg border border-border bg-transparent px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-teal"
                 />
               </TableCell>
               <TableCell className="text-right">
@@ -98,7 +99,7 @@ export function EditableLineItemTable({
                       unitPrice: parseFloat(e.target.value) || 0,
                     })
                   }
-                  className="w-24 bg-transparent border border-border rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-teal"
+                  className="w-24 rounded-lg border border-border bg-transparent px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-teal"
                 />
               </TableCell>
               <TableCell className="text-right font-medium text-sm">

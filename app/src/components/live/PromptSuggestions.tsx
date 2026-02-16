@@ -45,7 +45,7 @@ export function PromptSuggestions({ onSelect }: PromptSuggestionsProps) {
               onClick={() => onSelect(s.prompt)}
             >
               <div className="flex items-start gap-3">
-                <div className="mt-0.5 p-1.5 bg-teal/10 rounded-md">
+                <div className="mt-0.5 p-1.5 rounded-lg border border-border bg-teal/10">
                   <Icon className="w-4 h-4 text-teal" />
                 </div>
                 <div>

@@ -22,6 +22,7 @@ export function ProactiveDashboard() {
     sendOutreach,
     dismissOutreach,
     addOutreach,
+    updateOutreachMessage,
     updateFilter,
   } = useProactiveOutreach();
 
@@ -47,7 +48,7 @@ export function ProactiveDashboard() {
         <div className="enterprise-surface border-teal/20 bg-linear-to-r from-teal/5 to-white p-6">
           <p className="section-eyebrow mb-3">Proactive Revenue Engine</p>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-teal/10">
+            <div className="p-2 rounded-lg border border-border bg-teal/10">
               <Sparkles className="w-6 h-6 text-teal" />
             </div>
             <div>
@@ -124,6 +125,7 @@ export function ProactiveDashboard() {
                 index={i}
                 onSend={sendOutreach}
                 onDismiss={dismissOutreach}
+                onEdit={updateOutreachMessage}
               />
             ))}
           </div>

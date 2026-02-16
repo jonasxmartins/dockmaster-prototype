@@ -132,7 +132,7 @@ export function AddOpportunityDialog({ open, onOpenChange, onAdd }: AddOpportuni
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Annual Engine Service"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
+              className="flex h-9 w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
             />
           </div>
 
@@ -182,7 +182,7 @@ export function AddOpportunityDialog({ open, onOpenChange, onAdd }: AddOpportuni
                 value={revenue}
                 onChange={(e) => setRevenue(e.target.value)}
                 placeholder="0"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
+                className="flex h-9 w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
               />
             </div>
           </div>
@@ -195,7 +195,7 @@ export function AddOpportunityDialog({ open, onOpenChange, onAdd }: AddOpportuni
               value={trigger}
               onChange={(e) => setTrigger(e.target.value)}
               placeholder="e.g. Engine hours approaching service interval"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
+              className="flex h-9 w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
             />
           </div>
         </div>
