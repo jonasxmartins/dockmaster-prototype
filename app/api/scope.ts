@@ -1,3 +1,15 @@
+type VercelLikeRequest = {
+  method?: string;
+  body?: unknown;
+};
+
+type VercelLikeResponse = {
+  status: (code: number) => VercelLikeResponse;
+  json: (body: unknown) => void;
+  setHeader: (name: string, value: string) => void;
+  end: (body?: string) => void;
+};
+
 const CUSTOMERS_JSON = `[
   { "id": "cust-001", "name": "Robert Chen", "email": "rchen@email.com", "phone": "(813) 555-0142", "vessels": ["vessel-001"], "tier": "premium" },
   { "id": "cust-002", "name": "Maria Santos", "email": "msantos@email.com", "phone": "(813) 555-0287", "vessels": ["vessel-002"], "tier": "preferred" },
@@ -89,54 +101,84 @@ If the request mentions a known customer or vessel (by name, vessel details, or 
 
 Generate realistic, detailed marine service data. Include at least 4 line items in the work order. Ensure subtotal equals the sum of line item totals, tax is 7% of subtotal, and total = subtotal + tax.`;
 
-export default async function handler(req: Request): Promise<Response> {
+// Increase serverless timeout budget for live model calls.
+export const config = {
+  maxDuration: 60,
+};
+
+function readPromptFromBody(body: unknown): string | null {
+  if (!body) return null;
+  if (typeof body === "string") {
+    try {
+      const parsed = JSON.parse(body) as { prompt?: unknown };
+      return typeof parsed.prompt === "string" ? parsed.prompt.trim() : null;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof body === "object" && body !== null) {
+    const prompt = (body as { prompt?: unknown }).prompt;
+    return typeof prompt === "string" ? prompt.trim() : null;
+  }
+  return null;
+}
+
+export default async function handler(req: VercelLikeRequest, res: VercelLikeResponse): Promise<void> {
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
-  const { prompt } = await req.json();
+  try {
+    const prompt = readPromptFromBody(req.body);
+    if (!prompt) {
+      res.status(400).json({ error: "Missing prompt" });
+      return;
+    }
 
-  if (!prompt) {
-    return new Response("Missing prompt", { status: 400 });
-  }
+    const apiKey = (globalThis as { process?: { env?: Record<string, string | undefined> } })
+      .process?.env?.OPENAI_API_KEY;
+    if (!apiKey) {
+      res.status(500).json({ error: "OPENAI_API_KEY not configured" });
+      return;
+    }
 
-  const apiKey = (globalThis as { process?: { env?: Record<string, string | undefined> } })
-    .process?.env?.OPENAI_API_KEY;
-  if (!apiKey) {
-    return new Response("OPENAI_API_KEY not configured", { status: 500 });
-  }
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-5-mini",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: prompt },
-      ],
-      response_format: { type: "json_object" }
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    return new Response(`OpenAI API error: ${response.status} — ${text}`, {
-      status: 502,
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-5-mini",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+      }),
     });
+
+    if (!response.ok) {
+      const text = await response.text();
+      res.status(502).json({
+        error: `OpenAI API error: ${response.status}`,
+        details: text.slice(0, 1000),
+      });
+      return;
+    }
+
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content;
+    if (!content) {
+      res.status(502).json({ error: "No content in OpenAI response" });
+      return;
+    }
+
+    res.setHeader("Content-Type", "application/json");
+    res.status(200).end(content);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown server error";
+    res.status(500).json({ error: "Unhandled server error", details: message });
   }
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-
-  if (!content) {
-    return new Response("No content in OpenAI response", { status: 502 });
-  }
-
-  return new Response(content, {
-    headers: { "Content-Type": "application/json" },
-  });
 }
