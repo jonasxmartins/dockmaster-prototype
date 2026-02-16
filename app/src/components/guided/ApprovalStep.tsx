@@ -5,18 +5,24 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, Edit3, ArrowRight, MessageSquare } from "lucide-react";
-import type { Scenario } from "@/lib/types";
+import type { Scenario, WorkOrderData } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 interface ApprovalStepProps {
   scenario: Scenario;
+  effectiveWorkOrder?: WorkOrderData;
   onGenerate: () => void;
 }
 
-export function ApprovalStep({ scenario, onGenerate }: ApprovalStepProps) {
+export function ApprovalStep({
+  scenario,
+  effectiveWorkOrder,
+  onGenerate,
+}: ApprovalStepProps) {
   const [approved, setApproved] = useState(false);
   const [notes, setNotes] = useState("");
-  const { workOrder, marginCheck, entityExtraction } = scenario.stages;
+  const workOrder = effectiveWorkOrder ?? scenario.stages.workOrder;
+  const { marginCheck, entityExtraction } = scenario.stages;
 
   if (approved) {
     return (

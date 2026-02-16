@@ -1,17 +1,25 @@
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Anchor, Phone, Mail, MapPin } from "lucide-react";
-import type { Scenario } from "@/lib/types";
+import { Phone, Mail, MapPin } from "lucide-react";
+import type { Scenario, WorkOrderData } from "@/lib/types";
 import { marina } from "@/data/marina";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import dockMasterLogo from "@/assets/DockMaster-logo.png";
 
 interface CustomerEstimateProps {
   scenario: Scenario;
+  effectiveWorkOrder?: WorkOrderData;
+  serviceWriterComments?: string;
 }
 
-export function CustomerEstimate({ scenario }: CustomerEstimateProps) {
-  const { workOrder, entityExtraction } = scenario.stages;
+export function CustomerEstimate({
+  scenario,
+  effectiveWorkOrder,
+  serviceWriterComments,
+}: CustomerEstimateProps) {
+  const { entityExtraction } = scenario.stages;
+  const workOrder = effectiveWorkOrder ?? scenario.stages.workOrder;
   const { customer, vessel } = entityExtraction;
 
   return (
@@ -22,12 +30,14 @@ export function CustomerEstimate({ scenario }: CustomerEstimateProps) {
       <Card className="max-w-2xl mx-auto p-8 bg-white shadow-lg">
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-navy rounded-lg">
-              <Anchor className="w-6 h-6 text-white" />
-            </div>
+          <div className="flex items-center gap-5">
+            <img
+              src={dockMasterLogo}
+              alt="DockMaster"
+              className="w-24 h-auto object-contain"
+            />
             <div>
-              <h1 className="text-xl font-serif font-bold text-navy">
+              <h1 className="text-2xl font-serif font-bold text-navy">
                 {marina.name}
               </h1>
               <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
@@ -139,6 +149,18 @@ export function CustomerEstimate({ scenario }: CustomerEstimateProps) {
             </div>
           </div>
         </div>
+
+        {serviceWriterComments && (
+          <>
+            <Separator className="my-6" />
+            <div className="text-sm">
+              <h3 className="font-medium text-navy mb-1">
+                Service Writer Notes
+              </h3>
+              <p className="text-muted-foreground">{serviceWriterComments}</p>
+            </div>
+          </>
+        )}
 
         <Separator className="my-6" />
 

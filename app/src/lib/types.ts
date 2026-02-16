@@ -122,6 +122,11 @@ export interface MarginCheckData {
   optimizedTotal: number;
 }
 
+export interface MessageSource {
+  channel: "whatsapp" | "email" | "phone";
+  identifier: string;
+}
+
 export interface Scenario {
   id: string;
   title: string;
@@ -129,6 +134,9 @@ export interface Scenario {
   customerRequest: string;
   customerId: string;
   vesselId: string;
+  messageSource: MessageSource;
+  suggestedReply: string;
+  customerConfirmation: string;
   stages: {
     entityExtraction: EntityExtractionData;
     diagnosticRetrieval: DiagnosticRetrievalData;
@@ -137,7 +145,40 @@ export interface Scenario {
   };
 }
 
-export type AppMode = "guided" | "live";
+export type AppMode = "guided" | "proactive" | "architecture";
+
+export type OutreachStatus = "draft" | "sent" | "opened" | "booked" | "dismissed";
+export type OutreachPriority = "low" | "medium" | "high";
+
+export interface ProactiveOutreach {
+  id: string;
+  customerId: string;
+  vesselId: string;
+  title: string;
+  message: string;
+  trigger: string;
+  triggerType: "engine_hours" | "seasonal" | "time_based" | "parts_wear";
+  priority: OutreachPriority;
+  status: OutreachStatus;
+  estimatedRevenue: number;
+  channel: "email" | "whatsapp" | "phone";
+  createdDate: string;
+  dueDate?: string;
+  aiConfidence: number;
+  aiReasoning: string;
+  aiAnalysis?: {
+    findings: string[];
+    historicalContext: string;
+    riskFactor?: string;
+  };
+}
+
+export interface OutreachFilters {
+  status: "all" | "to-review" | "sent" | "to-reply" | "dismissed";
+  channel: "all" | "email" | "whatsapp" | "phone";
+  revenueRange: "all" | "0-500" | "500-1500" | "1500+";
+  priority: "all" | "low" | "medium" | "high";
+}
 
 export type GuidedStep =
   | "intake"

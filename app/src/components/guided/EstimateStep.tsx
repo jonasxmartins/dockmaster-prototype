@@ -1,15 +1,22 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Download } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { CustomerEstimate } from "@/components/estimate/CustomerEstimate";
-import type { Scenario } from "@/lib/types";
+import type { Scenario, WorkOrderData } from "@/lib/types";
 
 interface EstimateStepProps {
   scenario: Scenario;
-  onReset: () => void;
+  effectiveWorkOrder?: WorkOrderData;
+  serviceWriterComments?: string;
+  onBackToList: () => void;
 }
 
-export function EstimateStep({ scenario, onReset }: EstimateStepProps) {
+export function EstimateStep({
+  scenario,
+  effectiveWorkOrder,
+  serviceWriterComments,
+  onBackToList,
+}: EstimateStepProps) {
   return (
     <div className="space-y-6">
       <motion.div
@@ -25,7 +32,11 @@ export function EstimateStep({ scenario, onReset }: EstimateStepProps) {
         </p>
       </motion.div>
 
-      <CustomerEstimate scenario={scenario} />
+      <CustomerEstimate
+        scenario={scenario}
+        effectiveWorkOrder={effectiveWorkOrder}
+        serviceWriterComments={serviceWriterComments}
+      />
 
       <motion.div
         className="flex justify-center gap-3"
@@ -33,9 +44,9 @@ export function EstimateStep({ scenario, onReset }: EstimateStepProps) {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
       >
-        <Button variant="outline" className="gap-2" onClick={onReset}>
-          <RotateCcw className="w-4 h-4" />
-          Try Another Scenario
+        <Button variant="outline" className="gap-2" onClick={onBackToList}>
+          <ArrowLeft className="w-4 h-4" />
+          Back to Requests
         </Button>
         <Button className="bg-navy hover:bg-navy-light text-white gap-2">
           <Download className="w-4 h-4" />

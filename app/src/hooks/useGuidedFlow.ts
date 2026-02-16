@@ -1,13 +1,42 @@
-import { useState, useCallback } from "react";
-import type { GuidedStep, Scenario } from "@/lib/types";
+import { useState, useCallback, useMemo } from "react";
+import type { GuidedStep, Scenario, WorkOrderData } from "@/lib/types";
 import { scenarios } from "@/data/scenarios";
+
+export type ScenarioStatus = "new" | "in_progress" | "completed";
 
 export function useGuidedFlow() {
   const [step, setStep] = useState<GuidedStep>("intake");
-  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const [selectedScenarioIndex, setSelectedScenarioIndex] = useState<
+    number | null
+  >(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [editedWorkOrder, setEditedWorkOrder] = useState<WorkOrderData | null>(
+    null
+  );
+  const [serviceWriterComments, setServiceWriterComments] = useState("");
+  const [liveScenarios, setLiveScenarios] = useState<Scenario[]>([]);
+  const [scenarioStatuses, setScenarioStatuses] = useState<
+    Record<string, ScenarioStatus>
+  >(() => {
+    const initial: Record<string, ScenarioStatus> = {};
+    for (const s of scenarios) {
+      initial[s.id] = "new";
+    }
+    return initial;
+  });
 
-  const scenario: Scenario = scenarios[scenarioIndex];
+  const allScenarios = useMemo(
+    () => [...liveScenarios, ...scenarios],
+    [liveScenarios]
+  );
+
+  const scenario: Scenario | null =
+    selectedScenarioIndex !== null ? allScenarios[selectedScenarioIndex] : null;
+
+  const addScenario = useCallback((newScenario: Scenario) => {
+    setLiveScenarios((prev) => [newScenario, ...prev]);
+    setScenarioStatuses((prev) => ({ ...prev, [newScenario.id]: "new" }));
+  }, []);
 
   const nextStep = useCallback(() => {
     const steps: GuidedStep[] = [
@@ -20,12 +49,19 @@ export function useGuidedFlow() {
     const currentIndex = steps.indexOf(step);
     if (currentIndex < steps.length - 1) {
       setIsTransitioning(true);
+      const nextStepId = steps[currentIndex + 1];
       setTimeout(() => {
-        setStep(steps[currentIndex + 1]);
+        setStep(nextStepId);
+        if (nextStepId === "estimate" && scenario) {
+          setScenarioStatuses((prev) => ({
+            ...prev,
+            [scenario.id]: "completed",
+          }));
+        }
         setIsTransitioning(false);
       }, 300);
     }
-  }, [step]);
+  }, [step, scenario]);
 
   const prevStep = useCallback(() => {
     const steps: GuidedStep[] = [
@@ -45,29 +81,47 @@ export function useGuidedFlow() {
     }
   }, [step]);
 
-  const reset = useCallback(() => {
+  const backToList = useCallback(() => {
+    setSelectedScenarioIndex(null);
     setStep("intake");
     setIsTransitioning(false);
+    setEditedWorkOrder(null);
+    setServiceWriterComments("");
   }, []);
 
   const selectScenario = useCallback(
     (index: number) => {
-      if (index !== scenarioIndex) {
-        setScenarioIndex(index);
-        setStep("intake");
-      }
+      setSelectedScenarioIndex(index);
+      setStep("intake");
+      setEditedWorkOrder(null);
+      setServiceWriterComments("");
+      setScenarioStatuses((prev) => {
+        const s = allScenarios[index];
+        if (prev[s.id] === "new") {
+          return { ...prev, [s.id]: "in_progress" };
+        }
+        return prev;
+      });
     },
-    [scenarioIndex]
+    [allScenarios]
   );
 
   return {
     step,
     scenario,
-    scenarioIndex,
+    selectedScenarioIndex,
     isTransitioning,
+    editedWorkOrder,
+    serviceWriterComments,
+    scenarioStatuses,
+    allScenarios,
+    liveScenarios,
+    setEditedWorkOrder,
+    setServiceWriterComments,
     nextStep,
     prevStep,
-    reset,
+    backToList,
     selectScenario,
+    addScenario,
   };
 }

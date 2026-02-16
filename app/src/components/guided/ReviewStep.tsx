@@ -1,16 +1,59 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { WorkOrderDetail } from "@/components/workorder/WorkOrderDetail";
 import { MarginRecommendations } from "@/components/workorder/MarginRecommendations";
-import type { Scenario } from "@/lib/types";
+import { useWorkOrderEditor } from "@/hooks/useWorkOrderEditor";
+import type { Scenario, WorkOrderData } from "@/lib/types";
 
 interface ReviewStepProps {
   scenario: Scenario;
   onApprove: () => void;
+  onWorkOrderChange: (workOrder: WorkOrderData) => void;
+  serviceWriterComments: string;
+  onServiceWriterCommentsChange: (value: string) => void;
 }
 
-export function ReviewStep({ scenario, onApprove }: ReviewStepProps) {
+export function ReviewStep({
+  scenario,
+  onApprove,
+  onWorkOrderChange,
+  serviceWriterComments,
+  onServiceWriterCommentsChange,
+}: ReviewStepProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [technicianNotes, setTechnicianNotes] = useState(
+    scenario.stages.workOrder.technicianNotes
+  );
+
+  const {
+    computedWorkOrder,
+    updateItem,
+    removeItem,
+    addItem,
+  } = useWorkOrderEditor(scenario.stages.workOrder);
+
+  const handleToggleEdit = () => {
+    if (isEditing) {
+      // Done editing — push computed work order up
+      onWorkOrderChange({
+        ...computedWorkOrder,
+        technicianNotes,
+      });
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleApprove = () => {
+    // Ensure latest edits are persisted even if not toggled off
+    onWorkOrderChange({
+      ...computedWorkOrder,
+      technicianNotes,
+    });
+    onApprove();
+  };
+
   return (
     <div className="space-y-6">
       <motion.div
@@ -22,7 +65,7 @@ export function ReviewStep({ scenario, onApprove }: ReviewStepProps) {
         </h2>
         <p className="text-sm text-muted-foreground">
           Review the AI-generated work order and margin optimization
-          recommendations.
+          recommendations. Click Edit to modify line items.
         </p>
       </motion.div>
 
@@ -34,8 +77,17 @@ export function ReviewStep({ scenario, onApprove }: ReviewStepProps) {
           transition={{ delay: 0.1 }}
         >
           <WorkOrderDetail
-            workOrder={scenario.stages.workOrder}
+            workOrder={isEditing ? computedWorkOrder : computedWorkOrder}
             entityData={scenario.stages.entityExtraction}
+            isEditing={isEditing}
+            onToggleEdit={handleToggleEdit}
+            onUpdateItem={updateItem}
+            onRemoveItem={removeItem}
+            onAddItem={addItem}
+            technicianNotes={technicianNotes}
+            onTechnicianNotesChange={setTechnicianNotes}
+            serviceWriterComments={serviceWriterComments}
+            onServiceWriterCommentsChange={onServiceWriterCommentsChange}
           />
         </motion.div>
 
@@ -58,7 +110,7 @@ export function ReviewStep({ scenario, onApprove }: ReviewStepProps) {
         <Button
           size="lg"
           className="bg-teal hover:bg-teal/90 text-white gap-2"
-          onClick={onApprove}
+          onClick={handleApprove}
         >
           Approve & Send Estimate
           <ArrowRight className="w-4 h-4" />

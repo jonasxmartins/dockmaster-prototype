@@ -1,5 +1,7 @@
 import type { PipelineStage } from "./types";
 
+export const TAX_RATE = 0.07;
+
 export const SERVICE_CATEGORIES = [
   "Engine & Mechanical",
   "Electrical Systems",
@@ -57,7 +59,7 @@ export const PIPELINE_STAGES: {
 
 export const GUIDED_STEPS = [
   { id: "intake" as const, label: "Customer Request", number: 1 },
-  { id: "pipeline" as const, label: "AI Pipeline", number: 2 },
+  { id: "pipeline" as const, label: "AI Service Analysis", number: 2 },
   { id: "review" as const, label: "Service Review", number: 3 },
   { id: "approval" as const, label: "Approval", number: 4 },
   { id: "estimate" as const, label: "Estimate", number: 5 },

@@ -1,20 +1,50 @@
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Clock, Calendar, FileText, Pencil, Check } from "lucide-react";
 import { LineItemTable } from "./LineItemTable";
-import type { WorkOrderData, EntityExtractionData } from "@/lib/types";
+import { EditableLineItemTable } from "./EditableLineItemTable";
+import type {
+  WorkOrderData,
+  EntityExtractionData,
+  LineItem,
+} from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface WorkOrderDetailProps {
   workOrder: WorkOrderData;
   entityData: EntityExtractionData;
+  isEditing?: boolean;
+  onToggleEdit?: () => void;
+  onUpdateItem?: (id: string, updates: Partial<Omit<LineItem, "id">>) => void;
+  onRemoveItem?: (id: string) => void;
+  onAddItem?: () => void;
+  technicianNotes?: string;
+  onTechnicianNotesChange?: (value: string) => void;
+  serviceWriterComments?: string;
+  onServiceWriterCommentsChange?: (value: string) => void;
 }
 
 export function WorkOrderDetail({
   workOrder,
   entityData,
+  isEditing = false,
+  onToggleEdit,
+  onUpdateItem,
+  onRemoveItem,
+  onAddItem,
+  technicianNotes,
+  onTechnicianNotesChange,
+  serviceWriterComments,
+  onServiceWriterCommentsChange,
 }: WorkOrderDetailProps) {
+  const displayedNotes =
+    technicianNotes !== undefined
+      ? technicianNotes
+      : workOrder.technicianNotes;
+
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between mb-4">
@@ -22,7 +52,29 @@ export function WorkOrderDetail({
           <FileText className="w-5 h-5 text-navy" />
           <h3 className="font-serif font-semibold text-lg">{workOrder.id}</h3>
         </div>
-        <Badge className="bg-teal/10 text-teal">Ready for Review</Badge>
+        <div className="flex items-center gap-2">
+          {onToggleEdit && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={onToggleEdit}
+            >
+              {isEditing ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  Done
+                </>
+              ) : (
+                <>
+                  <Pencil className="w-3.5 h-3.5" />
+                  Edit
+                </>
+              )}
+            </Button>
+          )}
+          <Badge className="bg-teal/10 text-teal">Ready for Review</Badge>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
@@ -54,7 +106,16 @@ export function WorkOrderDetail({
         </div>
       </div>
 
-      <LineItemTable items={workOrder.lineItems} />
+      {isEditing && onUpdateItem && onRemoveItem && onAddItem ? (
+        <EditableLineItemTable
+          items={workOrder.lineItems}
+          onUpdateItem={onUpdateItem}
+          onRemoveItem={onRemoveItem}
+          onAddItem={onAddItem}
+        />
+      ) : (
+        <LineItemTable items={workOrder.lineItems} />
+      )}
 
       <Separator className="my-4" />
 
@@ -73,17 +134,46 @@ export function WorkOrderDetail({
         </div>
       </div>
 
-      {workOrder.technicianNotes && (
+      {(displayedNotes || isEditing) && (
         <>
           <Separator className="my-4" />
           <div>
             <h4 className="text-sm font-medium mb-1">Technician Notes</h4>
-            <p className="text-sm text-muted-foreground">
-              {workOrder.technicianNotes}
-            </p>
+            {isEditing && onTechnicianNotesChange ? (
+              <Textarea
+                value={displayedNotes}
+                onChange={(e) => onTechnicianNotesChange(e.target.value)}
+                rows={3}
+                className="text-sm resize-none"
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">{displayedNotes}</p>
+            )}
           </div>
         </>
       )}
+
+      <Separator className="my-4" />
+      <div>
+        <h4 className="text-sm font-medium mb-1">Service Writer Comments</h4>
+        {isEditing && onServiceWriterCommentsChange ? (
+          <Textarea
+            value={serviceWriterComments ?? ""}
+            onChange={(e) => onServiceWriterCommentsChange(e.target.value)}
+            rows={2}
+            placeholder="Add comments for the customer estimate..."
+            className="text-sm resize-none"
+          />
+        ) : serviceWriterComments ? (
+          <p className="text-sm text-muted-foreground">
+            {serviceWriterComments}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">
+            No comments added
+          </p>
+        )}
+      </div>
     </Card>
   );
 }

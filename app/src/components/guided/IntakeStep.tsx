@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { MessageSquare, User, Ship, Send } from "lucide-react";
+import { MessageSquare, User, Ship } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { MessageSourceBadge } from "./MessageSourceBadge";
+import { ServiceWriterReply } from "./ServiceWriterReply";
 import type { Scenario } from "@/lib/types";
 
 interface IntakeStepProps {
@@ -25,7 +26,7 @@ export function IntakeStep({ scenario, onSubmit }: IntakeStepProps) {
         </h2>
         <p className="text-sm text-muted-foreground">
           A customer has submitted a service request. Review the details and
-          submit to the AI pipeline.
+          submit for AI service analysis.
         </p>
       </motion.div>
 
@@ -37,13 +38,22 @@ export function IntakeStep({ scenario, onSubmit }: IntakeStepProps) {
           transition={{ delay: 0.2 }}
         >
           <Card className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <MessageSquare className="w-4 h-4 text-teal" />
-              <span className="text-sm font-medium">Customer Message</span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-teal" />
+                <span className="text-sm font-medium">Customer Message</span>
+              </div>
+              <MessageSourceBadge source={scenario.messageSource} />
             </div>
-            <div className="bg-muted rounded-lg p-4 text-sm leading-relaxed">
+            <div className="bg-muted rounded-lg rounded-tl-sm p-4 text-sm leading-relaxed mb-4">
               "{scenario.customerRequest}"
             </div>
+
+            <ServiceWriterReply
+              suggestedReply={scenario.suggestedReply}
+              customerConfirmation={scenario.customerConfirmation}
+              onComplete={onSubmit}
+            />
           </Card>
         </motion.div>
 
@@ -88,22 +98,6 @@ export function IntakeStep({ scenario, onSubmit }: IntakeStepProps) {
           </Card>
         </motion.div>
       </div>
-
-      <motion.div
-        className="flex justify-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        <Button
-          size="lg"
-          className="bg-teal hover:bg-teal/90 text-white gap-2"
-          onClick={onSubmit}
-        >
-          <Send className="w-4 h-4" />
-          Submit to AI Pipeline
-        </Button>
-      </motion.div>
     </div>
   );
 }

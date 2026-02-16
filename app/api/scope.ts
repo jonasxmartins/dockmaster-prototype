@@ -1,42 +1,95 @@
-export const config = {
-  runtime: "edge",
-};
+const CUSTOMERS_JSON = `[
+  { "id": "cust-001", "name": "Robert Chen", "email": "rchen@email.com", "phone": "(813) 555-0142", "vessels": ["vessel-001"], "tier": "premium" },
+  { "id": "cust-002", "name": "Maria Santos", "email": "msantos@email.com", "phone": "(813) 555-0287", "vessels": ["vessel-002"], "tier": "preferred" },
+  { "id": "cust-003", "name": "James Whitfield", "email": "jwhitfield@email.com", "phone": "(813) 555-0391", "vessels": ["vessel-003"], "tier": "standard" }
+]`;
+
+const VESSELS_JSON = `[
+  { "id": "vessel-001", "name": "Sea Breeze", "make": "Boston Whaler", "model": "345 Conquest", "year": 2021, "length": 34, "engineType": "Twin Mercury Verado 350hp", "engineHours": 620, "hullType": "Deep-V Fiberglass", "customerId": "cust-001" },
+  { "id": "vessel-002", "name": "Coastal Runner", "make": "Grady-White", "model": "Freedom 375", "year": 2019, "length": 37, "engineType": "Triple Yamaha F300", "engineHours": 1180, "hullType": "Modified-V Fiberglass", "customerId": "cust-002" },
+  { "id": "vessel-003", "name": "Bay Dancer", "make": "Catalina", "model": "385", "year": 2018, "length": 38, "engineType": "Yanmar 45hp Diesel", "engineHours": 2400, "hullType": "Fin Keel Fiberglass", "customerId": "cust-003" }
+]`;
 
 const SYSTEM_PROMPT = `You are DockMaster AI, an expert marine service scoping assistant for Bayshore Marina in Tampa Bay, FL.
 
-Your role is to analyze customer service requests and generate detailed work orders. You have expertise in:
-- Engine & mechanical systems (outboard and inboard)
-- Electrical systems and marine electronics
-- Hull repair, bottom paint, and structural work
-- Navigation systems, plumbing, HVAC, rigging
+Given a customer service request, produce a complete JSON object matching the Scenario schema below. Do NOT wrap in markdown code fences — return raw JSON only.
 
-When a customer describes their issue, respond with a structured work order:
+## Pricing Rules
+- Labor rate: $165/hour
+- Tax: 7% on subtotal
+- Parts markup: 30-50% over wholesale cost
+- Use realistic Tampa Bay marine service pricing
 
-## Service Summary
-Brief description of the identified issue and recommended service.
+## Known Customers & Vessels
+Customers: ${CUSTOMERS_JSON}
+Vessels: ${VESSELS_JSON}
 
-## Work Order Details
-- **Customer Issue**: What the customer described
-- **Likely Diagnosis**: Based on symptoms and vessel type
-- **Recommended Service**: Step-by-step service plan
+If the request mentions a known customer or vessel (by name, vessel details, or description), use their IDs. Otherwise, default to customerId "cust-001" and vesselId "vessel-001".
 
-## Line Items
-Format as a table with Description, Category (Labor/Parts/Materials), Qty, and Estimated Cost.
+## Scenario JSON Schema
 
-## Totals
-- Subtotal
-- Tax (7%)
-- **Total**
+{
+  "id": string,            // unique, e.g. "scenario-ai-<timestamp>"
+  "title": string,         // short title for the service
+  "description": string,   // one-line summary
+  "customerRequest": string, // the original customer message
+  "customerId": string,    // from known customers
+  "vesselId": string,      // from known vessels
+  "messageSource": { "channel": "whatsapp" | "email" | "phone", "identifier": string },
+  "suggestedReply": string,  // professional reply to customer
+  "customerConfirmation": string, // simulated customer confirmation
+  "stages": {
+    "entityExtraction": {
+      "customer": <full Customer object with id, name, email, phone, vessels, tier, history (array of {date,description,total})>,
+      "vessel": <full Vessel object with id, name, make, model, year, length, engineType, engineHours, hullType, customerId>,
+      "serviceType": string,
+      "urgency": "routine" | "urgent" | "emergency",
+      "keywords": string[],
+      "requestSummary": string
+    },
+    "diagnosticRetrieval": {
+      "patterns": [{ "vesselType": string, "symptom": string, "commonCauses": string[], "typicalResolution": string, "avgCost": number, "avgHours": number }],
+      "similarCases": number,
+      "confidence": number,
+      "recommendedParts": []
+    },
+    "workOrder": {
+      "id": string,           // e.g. "WO-2026-XXXX"
+      "lineItems": [{
+        "id": string,
+        "description": string,
+        "category": "labor" | "parts" | "materials" | "environmental",
+        "quantity": number,
+        "unitPrice": number,
+        "total": number,
+        "partId"?: string,
+        "laborHours"?: number
+      }],
+      "subtotal": number,
+      "tax": number,          // 7% of subtotal
+      "total": number,        // subtotal + tax
+      "estimatedHours": number,
+      "scheduledDate": string, // ISO date, a few days from now
+      "technicianNotes": string
+    },
+    "marginCheck": {
+      "currentMargin": number,  // 0.35-0.45
+      "targetMargin": 0.42,
+      "recommendations": [{
+        "type": "upsell" | "optimization" | "preventive",
+        "title": string,
+        "description": string,
+        "estimatedRevenue": number,
+        "confidence": number
+      }],
+      "optimizedTotal": number
+    }
+  }
+}
 
-## Technician Notes
-Any important notes about scheduling, parts availability, or additional recommendations.
+Generate realistic, detailed marine service data. Include at least 4 line items in the work order. Ensure subtotal equals the sum of line item totals, tax is 7% of subtotal, and total = subtotal + tax.`;
 
-## Margin Optimization
-Suggest 1-2 upsell or preventive maintenance additions that would benefit the customer.
-
-Keep responses professional, detailed, and specific to marine service. Use realistic pricing for the Tampa Bay market. Labor rate is $165/hour.`;
-
-export default async function handler(req: Request) {
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
@@ -47,77 +100,43 @@ export default async function handler(req: Request) {
     return new Response("Missing prompt", { status: 400 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = (globalThis as { process?: { env?: Record<string, string | undefined> } })
+    .process?.env?.OPENAI_API_KEY;
   if (!apiKey) {
-    return new Response("API key not configured", { status: 500 });
+    return new Response("OPENAI_API_KEY not configured", { status: 500 });
   }
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-5-20250929",
-      max_tokens: 2048,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: prompt }],
-      stream: true,
+      model: "gpt-5-mini",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" }
     }),
   });
 
   if (!response.ok) {
-    return new Response(`Anthropic API error: ${response.status}`, {
+    const text = await response.text();
+    return new Response(`OpenAI API error: ${response.status} — ${text}`, {
       status: 502,
     });
   }
 
-  const encoder = new TextEncoder();
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content;
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder();
+  if (!content) {
+    return new Response("No content in OpenAI response", { status: 502 });
+  }
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                if (
-                  parsed.type === "content_block_delta" &&
-                  parsed.delta?.text
-                ) {
-                  controller.enqueue(encoder.encode(parsed.delta.text));
-                }
-              } catch {
-                // Skip non-JSON lines
-              }
-            }
-          }
-        }
-      } finally {
-        controller.close();
-      }
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Transfer-Encoding": "chunked",
-    },
+  return new Response(content, {
+    headers: { "Content-Type": "application/json" },
   });
 }

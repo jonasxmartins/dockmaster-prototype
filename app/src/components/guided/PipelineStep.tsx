@@ -45,7 +45,7 @@ export function PipelineStep({ scenario, onComplete }: PipelineStepProps) {
         animate={{ opacity: 1, y: 0 }}
       >
         <h2 className="text-xl font-serif font-semibold mb-1">
-          AI Processing Pipeline
+          AI Service Analysis
         </h2>
         <p className="text-sm text-muted-foreground">
           Watch the AI analyze the request through four intelligent stages.

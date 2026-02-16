@@ -13,6 +13,11 @@ export const scenarios: Scenario[] = [
       "Hi, this is Robert Chen. My Sea Breeze has been running rough at idle and I noticed some power loss at higher RPMs during my last trip out. She's got about 620 hours on the twins now. Can you take a look and do whatever service is needed?",
     customerId: "cust-001",
     vesselId: "vessel-001",
+    messageSource: { channel: "whatsapp", identifier: "+1 (813) 555-0123" },
+    suggestedReply:
+      "Hi Robert! Thanks for reaching out. Rough idle and power loss at 620 hours on the twins definitely warrants a full tune-up. I'll get you scheduled for a diagnostic and service — we'll check spark plugs, fuel filters, impellers, and gear lube on both engines. Does next Thursday work for drop-off?",
+    customerConfirmation:
+      "Thursday works great. I'll have her at the dock by 8 AM. Thanks for getting me in so quick!",
     stages: {
       entityExtraction: {
         customer: getCustomer("cust-001")!,
@@ -176,6 +181,11 @@ export const scenarios: Scenario[] = [
       "This is Maria Santos calling about my Coastal Runner. I've been having electrical issues — the batteries keep dying overnight even when everything is turned off. Also, my navigation lights have been flickering on and off. I need this looked at before my fishing tournament next month.",
     customerId: "cust-002",
     vesselId: "vessel-002",
+    messageSource: { channel: "phone", identifier: "(813) 555-0456" },
+    suggestedReply:
+      "Hi Maria! I understand the urgency with your tournament coming up. Overnight battery drain plus flickering nav lights sounds like a parasitic draw — possibly a bad battery switch or corroded ground. We can get Coastal Runner in this week for a full electrical diagnostic. I'll prioritize this so we have plenty of time before your tournament.",
+    customerConfirmation:
+      "That's a relief! Yes, please get me in this week. I can drop her off Wednesday morning if that works.",
     stages: {
       entityExtraction: {
         customer: getCustomer("cust-002")!,
@@ -351,6 +361,11 @@ export const scenarios: Scenario[] = [
       "Hey, it's James Whitfield. I had Bay Dancer hauled for winter storage and the yard noticed some blistering on the hull below the waterline. Some of them look pretty big. I'd like to get the hull repaired and new bottom paint before spring launch. What are we looking at?",
     customerId: "cust-003",
     vesselId: "vessel-003",
+    messageSource: { channel: "email", identifier: "james.whitfield@email.com" },
+    suggestedReply:
+      "Hi James! Thanks for letting us know about Bay Dancer. Hull blistering below the waterline is fairly common on fiberglass hulls and best addressed during winter storage. We'll do a full blister mapping, grind and repair, barrier coat, and fresh bottom paint before spring launch. I'll also have the team inspect through-hulls and anodes while she's accessible. Want me to get this on the schedule?",
+    customerConfirmation:
+      "Yes, please go ahead and schedule it. Sooner the better so we have time for the laminate to dry. Thanks for the thorough plan!",
     stages: {
       entityExtraction: {
         customer: getCustomer("cust-003")!,
